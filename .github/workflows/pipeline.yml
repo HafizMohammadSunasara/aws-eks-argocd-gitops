@@ -3,17 +3,17 @@ name: Test, Build and Propose GitOps Deployment
 on:
   pull_request:
     branches: [main]
+
   push:
     branches: [main]
     paths:
       - 'app/**'
       - 'tests/**'
       - 'scripts/**'
-      - 'k8s/**'
-      - 'argocd/**'
       - 'Dockerfile'
       - 'requirements*.txt'
       - '.github/workflows/pipeline.yml'
+
   workflow_dispatch:
 
 permissions:
@@ -23,6 +23,7 @@ jobs:
   test:
     name: Unit tests, YAML checks and Docker build
     runs-on: ubuntu-latest
+
     steps:
       - name: Check out code
         uses: actions/checkout@v6
@@ -45,18 +46,22 @@ jobs:
       - name: Validate Kubernetes and Argo CD YAML
         run: python scripts/validate_manifests.py
 
-      - name: Build container locally (no ECR push yet)
+      - name: Build container locally for verification
         run: docker build --tag gitops-flask:ci .
 
   publish:
-    name: Publish ECR image, open GitOps promotion PR
+    name: Publish ECR image and open GitOps promotion PR
     needs: [test]
+
     if: ${{ github.event_name == 'push' && vars.AWS_REGION != '' && vars.AWS_ROLE_ARN != '' && vars.ECR_REPOSITORY != '' }}
+
     runs-on: ubuntu-latest
+
     permissions:
       contents: write
       id-token: write
       pull-requests: write
+
     steps:
       - name: Check out trusted main branch
         uses: actions/checkout@v6
@@ -83,21 +88,34 @@ jobs:
           REGISTRY: ${{ steps.login-ecr.outputs.registry }}
           REPO: ${{ vars.ECR_REPOSITORY }}
           GIT_SHA: ${{ github.sha }}
+
         run: |
           set -euo pipefail
+
           docker build --tag "$REGISTRY/$REPO:$GIT_SHA" .
+
           docker push "$REGISTRY/$REPO:$GIT_SHA"
-          python scripts/update_image.py --image "$REGISTRY/$REPO" --tag "$GIT_SHA"
+
+          python scripts/update_image.py \
+            --image "$REGISTRY/$REPO" \
+            --tag "$GIT_SHA"
 
       - name: Open pull request to promote the new image
         uses: peter-evans/create-pull-request@v8
+
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
+
           add-paths: k8s/overlays/dev/kustomization.yaml
+
           commit-message: 'chore(gitops): promote image to ${{ github.sha }}'
+
           branch: automation/promote-dev-image
+
           delete-branch: true
+
           title: 'GitOps: promote tested image ${{ github.sha }}'
+
           body: |
             This PR updates only the desired container image in Git.
 
