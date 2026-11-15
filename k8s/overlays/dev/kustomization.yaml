@@ -6,5 +6,5 @@ resources:
 images:
   - name: gitops-flask
     # Placeholder: update automatically after the first ECR build + promotion PR.
-    newName: 000000000000.dkr.ecr.us-east-1.amazonaws.com/gitops-argocd-eks-demo
-    newTag: bootstrap
+    newName: 825834484768.dkr.ecr.us-east-1.amazonaws.com/gitops-flask-app
+    newTag: 6a84c4989bd2716d4ed6a27027253ece37ff700b
