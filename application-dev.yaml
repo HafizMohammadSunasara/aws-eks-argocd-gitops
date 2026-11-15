@@ -1,0 +1,21 @@
+# Bootstrap this ONE TIME after installing self-managed Argo CD:
+# kubectl apply -n argocd -f argocd/application-dev.yaml
+# Intentionally manual sync at first; enable automated sync only after validation.
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: gitops-flask-dev
+  namespace: argocd
+spec:
+  project: default
+  source:
+    repoURL: https://github.com/HafizMohammadSunasara/aws-eks-argocd-gitops.git
+    targetRevision: main
+    path: k8s/overlays/dev
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: gitops-demo
+  syncPolicy:
+    syncOptions:
+      - CreateNamespace=true
+      - PruneLast=true
