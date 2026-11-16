@@ -7,4 +7,4 @@ images:
   - name: gitops-flask
     # Placeholder: update automatically after the first ECR build + promotion PR.
     newName: 825834484768.dkr.ecr.us-east-1.amazonaws.com/gitops-flask-app
-    newTag: a08279044c9d0e925a0765b46046d03448290743
+    newTag: 99d3c9f26bad4c1e2917f4081ce21c19ff722f82
