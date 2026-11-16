@@ -1,27 +1,364 @@
-<!doctype html>
+
+<!DOCTYPE html>
 <html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>GitOps on Amazon EKS · Live Demo</title>
-    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}" />
-  </head>
-  <body>
-    <div class="aurora a"></div><div class="aurora b"></div>
-    <main class="shell">
-      <div class="eyebrow"><span class="pulse"></span> CLOUD ENGINEERING LAB / LIVE APPLICATION</div>
-      <h1>LIVE CI/CD PIPELINE DEMO<br /><span>Version 3 - Powered by Amazon EKS.</span></h1>
-      <p class="intro">GitHub Actions builds the container. Amazon ECR stores the image.
-        Argo CD reconciles the Kubernetes state directly from Git.</p>
-      <div class="pipeline">
-        <div>GitHub</div><b>→</b><div>Actions</div><b>→</b><div>Amazon ECR</div><b>→</b><div>Argo CD</div><b>→</b><div>Amazon EKS</div>
-      </div>
-      <div class="stats">
-        <div class="tile"><small>Application revision</small><strong>{{ version }}</strong></div>
-        <div class="tile"><small>Running container / pod</small><strong>{{ pod }}</strong></div>
-        <div class="tile"><small>Readiness check</small><strong class="ok">● Healthy</strong></div>
-      </div>
-      <div class="footer"><span>Hafiz Mohammad Sunasara · AWS &amp; DevOps Engineering</span><span>GitOps demonstration · Not a production service</span></div>
-    </main>
-  </body>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GitOps Pipeline | Deployment V3</title>
+
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Arial, sans-serif;
+            background: #080d19;
+            color: #ffffff;
+            min-height: 100vh;
+            padding: 30px 20px;
+        }
+
+        .container {
+            max-width: 1100px;
+            margin: auto;
+        }
+
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 15px;
+            padding-bottom: 25px;
+            border-bottom: 1px solid #253047;
+        }
+
+        .logo {
+            font-size: 22px;
+            font-weight: 800;
+            color: #38bdf8;
+        }
+
+        .badge {
+            background: #123525;
+            border: 1px solid #22c55e;
+            color: #4ade80;
+            padding: 9px 17px;
+            border-radius: 25px;
+            font-size: 13px;
+            font-weight: bold;
+        }
+
+        .hero {
+            text-align: center;
+            padding: 75px 15px 50px;
+        }
+
+        .hero h1 {
+            font-size: clamp(32px, 6vw, 55px);
+            line-height: 1.2;
+            margin-bottom: 20px;
+        }
+
+        .highlight {
+            color: #38bdf8;
+        }
+
+        .hero p {
+            color: #94a3b8;
+            font-size: 17px;
+            line-height: 1.7;
+        }
+
+        .version {
+            display: inline-block;
+            margin-top: 28px;
+            background: #172554;
+            color: #93c5fd;
+            padding: 13px 25px;
+            border: 1px solid #3b82f6;
+            border-radius: 12px;
+            font-size: 18px;
+            font-weight: bold;
+        }
+
+        .section-title {
+            margin: 35px 0 22px;
+            font-size: 23px;
+        }
+
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(
+                auto-fit,
+                minmax(220px, 1fr)
+            );
+            gap: 20px;
+        }
+
+        .card {
+            background: #111b2e;
+            border: 1px solid #253047;
+            border-radius: 16px;
+            padding: 25px;
+            transition: 0.25s;
+        }
+
+        .card:hover {
+            transform: translateY(-4px);
+            border-color: #38bdf8;
+        }
+
+        .card .icon {
+            font-size: 30px;
+            margin-bottom: 16px;
+        }
+
+        .card h3 {
+            margin-bottom: 10px;
+            font-size: 19px;
+        }
+
+        .card p {
+            color: #94a3b8;
+            font-size: 14px;
+            line-height: 1.6;
+        }
+
+        .pipeline {
+            margin-top: 35px;
+            background: #111b2e;
+            padding: 30px;
+            border-radius: 16px;
+            border: 1px solid #253047;
+        }
+
+        .pipeline-flow {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 12px;
+            margin-top: 25px;
+        }
+
+        .step {
+            background: #172554;
+            color: #bfdbfe;
+            padding: 12px 17px;
+            border-radius: 9px;
+            font-size: 14px;
+            font-weight: 600;
+        }
+
+        .arrow {
+            color: #38bdf8;
+            font-size: 21px;
+        }
+
+        .verification {
+            margin-top: 35px;
+            padding: 30px;
+            background: #09251c;
+            border: 1px solid #166534;
+            border-radius: 16px;
+            text-align: center;
+        }
+
+        .verification h2 {
+            color: #4ade80;
+            margin-bottom: 15px;
+        }
+
+        .verification p {
+            color: #bbf7d0;
+            line-height: 1.8;
+        }
+
+        .test-id {
+            margin-top: 15px;
+            display: inline-block;
+            padding: 12px 20px;
+            background: #064e3b;
+            border-radius: 8px;
+            font-family: monospace;
+            font-size: 15px;
+            overflow-wrap: anywhere;
+        }
+
+        footer {
+            text-align: center;
+            margin-top: 55px;
+            padding: 25px;
+            color: #64748b;
+            border-top: 1px solid #253047;
+            font-size: 14px;
+        }
+
+        @media (max-width: 600px) {
+            .hero {
+                padding-top: 50px;
+            }
+
+            .pipeline-flow {
+                flex-direction: column;
+            }
+
+            .arrow {
+                transform: rotate(90deg);
+            }
+        }
+    </style>
+</head>
+
+<body>
+
+<div class="container">
+
+    <header class="header">
+        <div class="logo">
+            ⚡ AWS GitOps Engineering
+        </div>
+
+        <div class="badge">
+            ● VERSION 3 TEST
+        </div>
+    </header>
+
+    <section class="hero">
+
+        <h1>
+            Advanced
+            <span class="highlight">GitOps</span>
+            <br>
+            Deployment Pipeline
+        </h1>
+
+        <p>
+            Automated CI/CD with GitHub Actions,
+            Amazon ECR, Argo CD and Amazon EKS.
+            <br>
+            Demonstrating modern cloud-native
+            deployment engineering.
+        </p>
+
+        <div class="version">
+            🚀 APPLICATION VERSION 3.0
+        </div>
+
+    </section>
+
+    <h2 class="section-title">
+        ☁️ Infrastructure & DevOps Stack
+    </h2>
+
+    <section class="grid">
+
+        <div class="card">
+            <div class="icon">⚙️</div>
+            <h3>GitHub Actions</h3>
+            <p>
+                Automated continuous integration,
+                application builds and container
+                publishing.
+            </p>
+        </div>
+
+        <div class="card">
+            <div class="icon">📦</div>
+            <h3>Amazon ECR</h3>
+            <p>
+                Container image registry with
+                commit-based image versioning.
+            </p>
+        </div>
+
+        <div class="card">
+            <div class="icon">🔄</div>
+            <h3>Argo CD</h3>
+            <p>
+                GitOps-based continuous delivery
+                and Kubernetes state reconciliation.
+            </p>
+        </div>
+
+        <div class="card">
+            <div class="icon">☸️</div>
+            <h3>Amazon EKS</h3>
+            <p>
+                AWS-managed Kubernetes environment
+                hosting the Flask application.
+            </p>
+        </div>
+
+    </section>
+
+    <section class="pipeline">
+
+        <h2>🔗 GitOps Delivery Architecture</h2>
+
+        <div class="pipeline-flow">
+
+            <span class="step">GitHub</span>
+            <span class="arrow">➜</span>
+
+            <span class="step">GitHub Actions</span>
+            <span class="arrow">➜</span>
+
+            <span class="step">Amazon ECR</span>
+            <span class="arrow">➜</span>
+
+            <span class="step">GitOps Repo</span>
+            <span class="arrow">➜</span>
+
+            <span class="step">Argo CD</span>
+            <span class="arrow">➜</span>
+
+            <span class="step">Amazon EKS</span>
+
+        </div>
+
+    </section>
+
+    <section class="verification">
+
+        <h2>🧪 GitOps Pipeline Verification</h2>
+
+        <p>
+            Deployment verification test is ready.
+            <br>
+            Confirm the new container image,
+            GitOps promotion and Argo CD sync.
+            <br>
+            When this version appears on the
+            EKS-hosted application, the UI update
+            has reached the cluster.
+        </p>
+
+        <div class="test-id">
+            GITOPS-VERIFY-2026-11-16-V3
+        </div>
+
+    </section>
+
+    <footer>
+        <p>
+            AWS EKS + Argo CD GitOps Engineering Project
+        </p>
+
+        <p style="margin-top: 10px;">
+            Built by Hafiz Mohammad Sunasara
+        </p>
+
+        <p style="margin-top: 8px;">
+            Deployment Test Version 3.0
+        </p>
+    </footer>
+
+</div>
+
+</body>
 </html>
